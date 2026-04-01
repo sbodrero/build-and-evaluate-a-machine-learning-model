@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Machine Learning Analysis Report — Diabetes Risk Prediction</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11.5pt;
+    line-height: 1.7;
+    color: #1a1a1a;
+    background: #fff;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 50px;
+  }
+  h1 { font-size: 18pt; margin-bottom: 4px; line-height: 1.3; }
+  h2 { font-size: 13.5pt; margin: 28px 0 8px; border-bottom: 1.5px solid #444; padding-bottom: 4px; }
+  h3 { font-size: 11.5pt; font-style: italic; margin: 18px 0 6px; }
+  p { margin-bottom: 12px; }
+  .meta { font-size: 10pt; color: #555; margin-bottom: 30px; line-height: 1.6; }
+  .meta span { display: block; }
+  .toc { background: #f7f7f7; border: 1px solid #ddd; padding: 16px 22px; margin: 0 0 30px; }
+  .toc h3 { font-size: 11pt; margin: 0 0 8px; font-style: normal; font-weight: bold; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin: 3px 0; font-size: 10.5pt; }
+  .toc a { color: #24527a; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 10.5pt; }
+  th { background: #e8e8e8; padding: 6px 10px; text-align: left; border: 1px solid #bbb; }
+  td { padding: 5px 10px; border: 1px solid #ccc; }
+  tr:nth-child(even) td { background: #f8f8f8; }
+  .stat-box { background: #f0f4f8; border-left: 4px solid #24527a; padding: 12px 16px; margin: 14px 0; font-size: 10.5pt; }
+  .stat-box strong { display: block; margin-bottom: 4px; font-size: 11pt; }
+  .references ol { margin-left: 22px; }
+  .references li { margin-bottom: 10px; font-size: 10.5pt; }
+  cite { font-style: normal; }
+  @media print {
+    body { padding: 20px 30px; }
+    .toc { break-after: avoid; }
+    h2 { break-before: avoid; break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Machine Learning Analysis Report<br>Diabetes Risk Prediction</h1>
+<div class="meta">
+  <span><strong>Author:</strong> Sébastien Bodrero</span>
+  <span><strong>Programme:</strong> MSc in Artificial Intelligence — Woolf University / Udacity</span>
+  <span><strong>Module 3:</strong> Machine Learning Foundations (Project 3)</span>
+  <span><strong>Date:</strong> April 2026</span>
+</div>
+
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#dataset">Dataset Description</a></li>
+    <li><a href="#approach">Modeling Approach</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#nontechnical">Interpretation for a Non-Technical Audience</a></li>
+    <li><a href="#limitations">Limitations and Potential Bias</a></li>
+    <li><a href="#references">References</a></li>
+  </ol>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="overview">1. Overview</h2>
+
+<p>This report presents a complete supervised machine learning workflow applied to the <strong>Pima Indians Diabetes Dataset</strong>, a publicly available dataset of diagnostic measurements for 768 female patients of Pima Indian heritage. The task is binary classification: predict whether a patient is at risk of diabetes (Outcome = 1) based on eight clinical features. Two models were built and compared — a Logistic Regression baseline and a Random Forest primary classifier — following reproducible data science practices as described by Adhikari (2022). The dataset was sourced from the Jason Brownlee Datasets GitHub mirror: <a href="https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv">github.com/jbrownlee/Datasets</a>.</p>
+
+<!-- ================================================================ -->
+<h2 id="dataset">2. Dataset Description</h2>
+
+<p>The Pima Indians Diabetes Dataset was compiled by the National Institute of Diabetes and Digestive and Kidney Diseases (NIDDK) and made publicly available through the UCI Machine Learning Repository. It contains <strong>768 rows and 9 columns</strong>, covering exclusively female patients of Pima Indian heritage aged 21 and above. Eight features are diagnostic measurements; the ninth is the binary target variable (<em>Outcome</em>: 1 = diabetes, 0 = no diabetes). The dataset contains no explicit missing value markers — instead, physiologically impossible zero values in five columns (<em>Glucose</em>, <em>BloodPressure</em>, <em>SkinThickness</em>, <em>Insulin</em>, <em>BMI</em>) serve as proxies for missing data, a well-documented data quality issue that required explicit handling during preprocessing.</p>
+
+<table>
+  <thead>
+    <tr><th>Column</th><th>Type</th><th>Description</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Pregnancies</td><td>Integer</td><td>Number of pregnancies</td><td>0 is valid</td></tr>
+    <tr><td>Glucose</td><td>Integer</td><td>Plasma glucose (2h OGTT, mg/dL)</td><td>0 = missing</td></tr>
+    <tr><td>BloodPressure</td><td>Integer</td><td>Diastolic blood pressure (mm Hg)</td><td>0 = missing</td></tr>
+    <tr><td>SkinThickness</td><td>Integer</td><td>Triceps skin fold thickness (mm)</td><td>0 = missing</td></tr>
+    <tr><td>Insulin</td><td>Integer</td><td>2-hour serum insulin (μU/ml)</td><td>0 = missing</td></tr>
+    <tr><td>BMI</td><td>Float</td><td>Body mass index (kg/m²)</td><td>0 = missing</td></tr>
+    <tr><td>DiabetesPedigreeFunction</td><td>Float</td><td>Genetic risk score</td><td>—</td></tr>
+    <tr><td>Age</td><td>Integer</td><td>Age in years</td><td>All ≥ 21</td></tr>
+    <tr><td>Outcome</td><td>Integer</td><td>Target: 1 = diabetes, 0 = no diabetes</td><td>268 positive (34.9%)</td></tr>
+  </tbody>
+</table>
+
+<p>The target class is <strong>imbalanced</strong>: 500 patients (65.1%) are negative and 268 (34.9%) are positive. This imbalance is moderate and characteristic of diabetes prevalence in screening populations.</p>
+
+<!-- ================================================================ -->
+<h2 id="approach">3. Modeling Approach</h2>
+
+<h3>3.1 Data Preparation and Preprocessing</h3>
+
+<p><strong>Zero-encoded missing value imputation:</strong> Zeros in <em>Glucose</em>, <em>BloodPressure</em>, <em>SkinThickness</em>, <em>Insulin</em>, and <em>BMI</em> were replaced with <code>NaN</code> and then imputed using the column median. Median was preferred over mean because these features are right-skewed (particularly <em>Insulin</em> and <em>SkinThickness</em>), making the median a more robust central-tendency estimate. A total of 652 cells were affected (out of 3,840 in the five columns — 17.0%), with <em>Insulin</em> (374 zeros, 48.7%) and <em>SkinThickness</em> (227 zeros, 29.6%) being the most severely affected.</p>
+
+<p><strong>Train-test split:</strong> An 80/20 stratified split (614 training / 154 test rows) was applied with <code>random_state=42</code>. Stratification ensures the class ratio is preserved in both subsets, preventing accidental over- or under-representation of the positive class in the test set.</p>
+
+<p><strong>Feature scaling:</strong> <code>StandardScaler</code> was fitted on the training set only and applied to both training and test sets. This prevents data leakage — the test set is treated as genuinely unseen data throughout the workflow (Pedregosa et al., 2011). Scaling is required for Logistic Regression (which is sensitive to feature magnitude) and applied uniformly to both models to ensure a fair comparison.</p>
+
+<h3>3.2 Model Selection</h3>
+
+<p><strong>Baseline — Logistic Regression</strong> (<code>solver='lbfgs'</code>, <code>max_iter=1000</code>): A linear probabilistic classifier that models the log-odds of the positive class as a linear function of features. It is interpretable, computationally efficient, and represents the standard linear baseline for binary classification tasks.</p>
+
+<p><strong>Primary — Random Forest Classifier</strong> (<code>n_estimators=200</code>, <code>random_state=42</code>): An ensemble of 200 decision trees trained on bootstrap samples, with random feature subsets evaluated at each split (bagging + random subspacing). Random forests capture non-linear interactions between features and are robust to outliers. Breiman (2001) demonstrated that these properties make random forests consistently effective on tabular datasets, including biomedical classification tasks. They also produce built-in feature importance estimates, enabling post-hoc interpretability.</p>
+
+<h3>3.3 Evaluation Metrics Justification</h3>
+
+<p>Given the class imbalance (34.9% positive), <strong>accuracy alone is misleading</strong>: a trivial classifier predicting "no diabetes" for every patient would achieve 65.1% accuracy without any learning. The evaluation therefore prioritises:</p>
+
+<ul style="margin: 8px 0 12px 24px;">
+  <li><strong>Recall (sensitivity):</strong> proportion of actual diabetics correctly identified. In a clinical screening context, false negatives (missed diagnoses) carry the greatest clinical risk — patients who are not flagged will not receive follow-up care.</li>
+  <li><strong>F1-score:</strong> harmonic mean of precision and recall — the standard summary metric for imbalanced binary classification, balancing false negatives against false positives.</li>
+  <li><strong>ROC-AUC:</strong> measures discriminative ability across all classification thresholds, independent of the operating threshold. A value of 1.0 is perfect; 0.5 is equivalent to random guessing.</li>
+  <li><strong>Accuracy and Precision:</strong> reported for completeness and cross-model comparison.</li>
+</ul>
+
+<h3>3.4 Model Assumptions</h3>
+
+<p>Logistic Regression assumes a linear relationship between features and the log-odds of the outcome, independence of observations, and no severe multicollinearity among features. Random Forest relaxes all three assumptions but assumes that the training distribution is representative of the deployment population — an assumption that may not hold in this dataset (see Section 6).</p>
+
+<!-- ================================================================ -->
+<h2 id="results">4. Results</h2>
+
+<h3>4.1 Model Performance</h3>
+
+<div class="stat-box">
+  <strong>Performance Comparison — Test Set (154 samples)</strong>
+  <table style="margin: 8px 0 0; background: transparent; font-size: 10pt;">
+    <thead>
+      <tr><th style="background:#dce8f4;">Model</th><th style="background:#dce8f4;">Accuracy</th><th style="background:#dce8f4;">Precision</th><th style="background:#dce8f4;">Recall</th><th style="background:#dce8f4;">F1-score</th><th style="background:#dce8f4;">ROC-AUC</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Logistic Regression</td><td>0.7078</td><td>0.6000</td><td>0.5000</td><td>0.5455</td><td>0.8130</td></tr>
+      <tr><td><strong>Random Forest</strong></td><td><strong>0.7403</strong></td><td><strong>0.6522</strong></td><td><strong>0.5556</strong></td><td><strong>0.6000</strong></td><td><strong>0.8173</strong></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>The <strong>Random Forest outperforms Logistic Regression across all five metrics</strong>. The most meaningful differences are in F1-score (+0.0545, a ~10% relative improvement) and precision (+0.0522), confirming that the ensemble model better captures the non-linear interactions between features — particularly between Glucose, BMI, and DiabetesPedigreeFunction — that a linear model cannot represent.</p>
+
+<p>The ROC-AUC values for both models (0.813 and 0.817) are notably higher than their accuracy scores, which reflects the class imbalance: both models can discriminate between diabetic and non-diabetic patients more reliably than raw accuracy suggests, but they struggle to convert that discriminative ability into high recall at the default 0.5 threshold. Adjusting the classification threshold downward (e.g., to 0.35–0.40) would increase recall at the cost of precision — a worthwhile tradeoff in a screening context.</p>
+
+<h3>4.2 Feature Importance (Random Forest)</h3>
+
+<table>
+  <thead>
+    <tr><th>Feature</th><th>Importance Score</th><th>Rank</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Glucose</td><td>0.2686</td><td>1</td></tr>
+    <tr><td>BMI</td><td>0.1579</td><td>2</td></tr>
+    <tr><td>DiabetesPedigreeFunction</td><td>0.1247</td><td>3</td></tr>
+    <tr><td>Age</td><td>0.1203</td><td>4</td></tr>
+    <tr><td>Insulin</td><td>0.0923</td><td>5</td></tr>
+    <tr><td>BloodPressure</td><td>0.0836</td><td>6</td></tr>
+    <tr><td>Pregnancies</td><td>0.0794</td><td>7</td></tr>
+    <tr><td>SkinThickness</td><td>0.0732</td><td>8</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Glucose</strong> is the dominant predictor (26.9% of total importance), consistent with its role as the primary diagnostic biomarker of diabetes. <strong>BMI</strong> (15.8%) and <strong>DiabetesPedigreeFunction</strong> (12.5%) rank second and third, reflecting the established associations between obesity and genetic predisposition with Type 2 diabetes risk. <em>SkinThickness</em> and <em>BloodPressure</em> contribute least, partly because they also had the highest rates of zero-encoded missing values, which may have reduced the signal quality of these features even after imputation.</p>
+
+<!-- ================================================================ -->
+<h2 id="nontechnical">5. Interpretation for a Non-Technical Audience</h2>
+
+<p>Imagine you are a doctor who needs to decide which patients should be referred for more detailed diabetes testing, based on a short questionnaire and a blood test. This analysis built a computer program — a machine learning model — that looks at eight measurements (like blood sugar level, body weight, and age) and makes an educated prediction about whether a patient is likely to have diabetes.</p>
+
+<p>Out of every 100 patients who actually have diabetes in our test group, the best model correctly flags approximately <strong>56</strong> of them for follow-up. This means it misses about 44 — a limitation that is important to acknowledge. On the other side, when the model does flag a patient, it is correct roughly <strong>65% of the time</strong>, meaning about 35 in every 100 flagged patients would turn out not to have diabetes (false alarms). Overall, it correctly classifies about <strong>74 out of every 100 patients</strong>.</p>
+
+<p>The single most useful piece of information the model uses is <strong>blood sugar level (glucose)</strong> — which makes good medical sense. Body weight (BMI) and a score that reflects family history of diabetes are the next most important signals. These results suggest that a simple, fast screening process focusing on these three measurements could help identify patients most likely to benefit from more detailed testing, without requiring expensive or invasive procedures.</p>
+
+<p>It is important to emphasise that this model is a <em>screening aid</em>, not a diagnosis. No machine learning model should replace clinical judgment, and any flagged patient should be evaluated by a qualified healthcare professional.</p>
+
+<!-- ================================================================ -->
+<h2 id="limitations">6. Limitations and Potential Bias</h2>
+
+<h3>6.1 Dataset Limitations</h3>
+
+<p><strong>Narrow population scope:</strong> The dataset covers exclusively female patients of Pima Indian heritage aged 21 and above. This population has an unusually high genetic predisposition to Type 2 diabetes — one of the highest documented rates in the world. A model trained on this population cannot be generalised to other ethnic groups, men, or younger patients without retraining and re-evaluation on representative data. Applying this model in a different clinical context would risk systematic misclassification.</p>
+
+<p><strong>Extensive zero-encoded missing data:</strong> 48.7% of insulin values and 29.6% of skin thickness values were missing (encoded as zero). Median imputation was applied, but this approach introduces bias: imputed values reduce the variance in the affected columns and may distort the learned feature relationships. Multiple imputation methods would propagate the uncertainty more honestly but were not implemented here in the interest of simplicity. The high missingness rate in <em>Insulin</em> — the fifth most important feature — likely suppresses the model's ability to exploit insulin's true predictive signal.</p>
+
+<h3>6.2 Potential Sources of Bias and Ethical Considerations</h3>
+
+<p><strong>Algorithmic bias from imbalanced data:</strong> The 65/35 class split means that the model is implicitly optimised to perform better on the majority class (non-diabetic patients). The relatively low recall (55.6% for Random Forest) demonstrates this: the model misses nearly half of all diabetic patients at the default threshold. In a real deployment, the classification threshold would need to be calibrated to the acceptable false-negative rate for the intended clinical use case. Deploying the model with the default threshold in a high-stakes screening scenario could cause systematic under-referral of diabetic patients.</p>
+
+<p><strong>Responsible use considerations:</strong> Any predictive model used in a clinical context raises ethical concerns about transparency, accountability, and equitable outcomes. A clinician using such a tool should understand its limitations, have access to the model's confidence scores (not just the binary prediction), and recognise that the training population may not reflect their patient population. Misuse of a model like this — for example, as an automated gate for insurance coverage decisions — would raise serious fairness concerns, as the model's errors are not uniformly distributed across age, weight, or number of pregnancies.</p>
+
+<!-- ================================================================ -->
+<h2 id="references">7. References</h2>
+
+<div class="references">
+<ol>
+  <li>
+    Adhikari, N. K. J. (2022). <em>Reproducible data science with Python: An open learning resource</em>. ResearchGate. <a href="https://doi.org/10.13140/RG.2.2.22099.04641">https://doi.org/10.13140/RG.2.2.22099.04641</a>
+  </li>
+  <li>
+    Breiman, L. (2001). Random forests. <em>Machine Learning</em>, <em>45</em>(1), 5–32. <a href="https://doi.org/10.1023/A:1010933404324">https://doi.org/10.1023/A:1010933404324</a>
+  </li>
+  <li>
+    Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., &amp; Duchesnay, É. (2011). Scikit-learn: Machine learning in Python. <em>Journal of Machine Learning Research</em>, <em>12</em>, 2825–2830. <a href="https://jmlr.org/papers/v12/pedregosa11a.html">https://jmlr.org/papers/v12/pedregosa11a.html</a>
+  </li>
+</ol>
+</div>
+
+</body>
+</html>
